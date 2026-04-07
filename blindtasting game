@@ -1,137 +1,805 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Blind Tasting Pro - Flexible Scorer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        .ios-blur { backdrop-filter: blur(10px); background: rgba(255,255,255,0.8); }
-        input[type="number"]::-webkit-inner-spin-button { display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blind Tasting 斷鳩估 | Host Setup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --wine: #7B1D1D;
+      --wine-light: #B91C1C;
+      --wine-pale: #FEF2F2;
+      --ink: #1A1A1A;
+      --stone: #F5F0EB;
+      --muted: #9CA3AF;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--stone);
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(123,29,29,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 90%, rgba(123,29,29,0.04) 0%, transparent 50%);
+      min-height: 100vh;
+      padding-bottom: 110px;
+      color: var(--ink);
+    }
+
+    h1, h2, .serif { font-family: 'Playfair Display', serif; }
+
+    /* Tab system */
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active {
+      background: var(--wine);
+      color: white;
+      box-shadow: 0 4px 14px rgba(123,29,29,0.3);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Config row */
+    .config-row {
+      background: white;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 16px;
+      transition: all 0.2s;
+    }
+    .config-row.disabled {
+      opacity: 0.45;
+      border-style: dashed;
+    }
+    .config-row:not(.disabled):hover {
+      border-color: rgba(123,29,29,0.3);
+      box-shadow: 0 2px 12px rgba(123,29,29,0.08);
+    }
+
+    /* Points input */
+    .pts-input {
+      width: 52px;
+      text-align: center;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 4px 6px;
+      font-weight: 700;
+      font-size: 13px;
+      transition: border-color 0.2s;
+      background: #FAFAFA;
+    }
+    .pts-input:focus { outline: none; border-color: var(--wine); }
+    .pts-input.invalid { border-color: #EF4444; background: #FEF2F2; }
+
+    /* Toggle */
+    .toggle-wrap { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #D1D5DB;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: white;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-wrap input:checked + .toggle-slider { background: var(--wine); }
+    .toggle-wrap input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* Player card */
+    .player-card {
+      background: white;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .player-card-header {
+      background: linear-gradient(135deg, var(--wine) 0%, #991B1B 100%);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .field-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #F9FAFB;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+      color: var(--ink);
+    }
+    .field-input:focus {
+      border-color: var(--wine-light);
+      box-shadow: 0 0 0 3px rgba(185,28,28,0.1);
+    }
+    .bonus-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--wine-pale);
+      border: 1.5px dashed #FCA5A5;
+      border-radius: 12px;
+      font-size: 13px;
+      font-style: italic;
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--wine);
+    }
+    .bonus-input:focus { border-color: var(--wine-light); }
+
+    /* Preset buttons */
+    .preset-btn {
+      flex: 1;
+      padding: 10px 6px;
+      border-radius: 12px;
+      border: 1.5px solid #E5E7EB;
+      background: white;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .preset-btn:hover {
+      border-color: var(--wine-light);
+      background: var(--wine-pale);
+      color: var(--wine);
+    }
+    .preset-btn.selected {
+      border-color: var(--wine);
+      background: var(--wine);
+      color: white;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1A1A1A;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 100;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Tolerance row */
+    .tolerance-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #F3F4F6;
+      font-size: 11px;
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .tol-btn {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      border: 1.5px solid #E5E7EB;
+      background: white;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .tol-btn:hover { border-color: var(--wine); color: var(--wine); }
+    .tol-val { font-weight: 800; color: var(--ink); min-width: 20px; text-align: center; }
+
+    /* Drag handles */
+    .drag-handle { cursor: grab; color: #D1D5DB; transition: color 0.15s; }
+    .drag-handle:hover { color: #9CA3AF; }
+
+    /* Section pill */
+    .section-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(123,29,29,0.08);
+      color: var(--wine);
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* Session code box */
+    #session-code-box {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #1A1A1A;
+      color: #86EFAC;
+      padding: 14px;
+      border-radius: 12px;
+      word-break: break-all;
+      line-height: 1.6;
+      max-height: 180px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .glass {
+      background: rgba(245,240,235,0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 99px; }
+  </style>
 </head>
-<body class="bg-[#F8F7F2] text-slate-900 pb-32">
+<body>
 
-    <header class="sticky top-0 z-50 p-4 border-b bg-white flex justify-between items-center shadow-sm">
-        <div>
-            <h1 class="text-xl font-black italic tracking-tighter">BLIND TASTING <span class="text-red-700">斷鳩</span></h1>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Advanced Scorer Mode</p>
-        </div>
-        <div id="total-points-badge" class="bg-black text-white px-3 py-1 rounded-full text-xs font-bold">
-            0 PTS
-        </div>
-    </header>
+  <!-- Header -->
+  <header class="sticky top-0 z-50 glass border-b border-gray-200 px-5 py-3">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-xl tracking-tight" style="font-family:'Playfair Display',serif; font-weight:900; font-style:italic;">
+          BLIND TASTING <span style="color:var(--wine)">斷鳩估</span>
+        </h1>
+        <p style="font-size:9px; font-weight:700; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase;">Host Control · v2.0</p>
+      </div>
+      <div id="total-pts-badge" style="background:var(--wine); color:white; padding:5px 12px; border-radius:99px; font-size:11px; font-weight:800; box-shadow:0 4px 12px rgba(123,29,29,0.3);">
+        0 MAX PTS
+      </div>
+    </div>
+  </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-6">
+  <main class="max-w-md mx-auto px-4 pt-5 space-y-5">
 
-        <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <div class="flex items-center gap-2 mb-4">
-                <i data-lucide="settings-2" class="w-5 h-5 text-red-700"></i>
-                <h2 class="font-bold text-lg">Scoring Setup</h2>
-            </div>
-
-            <div id="scoring-configs" class="space-y-4">
-                </div>
-        </section>
-
-        <section class="space-y-4">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Player Guess Preview</h2>
-            
-            <div id="player-form" class="space-y-3">
-                </div>
-        </section>
-
-    </main>
-
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200">
-        <div class="max-w-md mx-auto flex gap-3">
-            <button class="flex-1 bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
-                <i data-lucide="share-2" class="w-5 h-5"></i>
-                Post to GitHub
-            </button>
-        </div>
+    <!-- Tab Bar -->
+    <div class="flex gap-2 bg-white p-1.5 rounded-2xl border border-gray-200 shadow-sm">
+      <button class="tab-btn active flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5" onclick="switchTab('setup')">
+        <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> Setup Rules
+      </button>
+      <button class="tab-btn flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-gray-500" onclick="switchTab('preview')">
+        <i data-lucide="eye" style="width:13px;height:13px"></i> Player Preview
+      </button>
+      <button class="tab-btn flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-gray-500" onclick="switchTab('export')">
+        <i data-lucide="share-2" style="width:13px;height:13px"></i> Export
+      </button>
     </div>
 
-    <script>
-        // CORE STATE: This is the "Logic" the host controls
-        const config = {
-            categories: [
-                { id: 'grape', label: '提子品種', pts: 20, enabled: true, bonus: false },
-                { id: 'country', label: '國家', pts: 10, enabled: true, bonus: false },
-                { id: 'region', label: '產區', pts: 20, enabled: true, bonus: true, bonusLabel: 'Village/Cru Bonus', bonusPts: 10 },
-                { id: 'vintage', label: '年份', pts: 10, enabled: true, tolerance: 1 },
-                { id: 'producer', label: '酒莊', pts: 20, enabled: true, bonus: false }
-            ]
-        };
+    <!-- TAB: SETUP -->
+    <div id="tab-setup" class="tab-pane active space-y-5">
 
-        function renderApp() {
-            const configContainer = document.getElementById('scoring-configs');
-            const formContainer = document.getElementById('player-form');
-            let totalPossible = 0;
+      <!-- Presets -->
+      <div class="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Quick Presets</p>
+        <div class="flex gap-2">
+          <button class="preset-btn" onclick="applyPreset('casual')">🥂 Casual<br><span style="font-weight:400;font-size:10px;opacity:0.7">Grape+Country</span></button>
+          <button class="preset-btn selected" onclick="applyPreset('classic')">🍷 Classic<br><span style="font-weight:400;font-size:10px;opacity:0.7">All 5 fields</span></button>
+          <button class="preset-btn" onclick="applyPreset('vintage')">📅 Vintage<br><span style="font-weight:400;font-size:10px;opacity:0.7">Year focus</span></button>
+          <button class="preset-btn" onclick="applyPreset('pro')">🏆 Pro<br><span style="font-weight:400;font-size:10px;opacity:0.7">High stakes</span></button>
+        </div>
+      </div>
 
-            configContainer.innerHTML = '';
-            formContainer.innerHTML = '';
+      <!-- Scoring Config -->
+      <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div style="padding:7px; background:var(--wine-pale); border-radius:10px; color:var(--wine); display:flex;">
+              <i data-lucide="settings-2" style="width:15px;height:15px"></i>
+            </div>
+            <span class="font-bold text-sm" style="color:var(--ink)">Scoring Categories</span>
+          </div>
+          <span class="section-pill"><i data-lucide="award" style="width:10px;height:10px"></i> <span id="total-pts-inline">0 pts</span></span>
+        </div>
 
-            config.categories.forEach((cat, index) => {
-                if (cat.enabled) totalPossible += cat.pts + (cat.bonus ? cat.bonusPts : 0);
+        <div id="config-ui" class="space-y-3"></div>
 
-                // Build Host UI
-                const configItem = document.createElement('div');
-                configItem.className = `p-3 rounded-xl border ${cat.enabled ? 'bg-slate-50 border-slate-200' : 'bg-slate-100 opacity-50'}`;
-                configItem.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-sm">${cat.label}</span>
-                        <div class="flex items-center gap-2">
-                            <input type="number" onchange="updatePts(${index}, this.value)" value="${cat.pts}" class="w-12 text-center font-mono text-sm border rounded p-1">
-                            <input type="checkbox" onchange="toggleCat(${index})" ${cat.enabled ? 'checked' : ''} class="w-5 h-5 accent-red-700">
-                        </div>
-                    </div>
-                    ${cat.bonus !== undefined ? `
-                        <div class="mt-2 pt-2 border-t flex items-center gap-2">
-                            <input type="checkbox" onchange="toggleBonus(${index})" ${cat.bonus ? 'checked' : ''} id="b-${index}">
-                            <label for="b-${index}" class="text-[11px] font-medium text-slate-500 uppercase">Enable ${cat.bonusLabel} (+${cat.bonusPts}pts)</label>
-                        </div>
-                    ` : ''}
-                `;
-                configContainer.appendChild(configItem);
+        <div id="error-banner" class="hidden mt-3 p-3 rounded-xl text-xs font-bold text-red-700 bg-red-50 border border-red-100 flex items-center gap-2">
+          <i data-lucide="alert-circle" style="width:13px;height:13px;flex-shrink:0"></i>
+          <span id="error-msg"></span>
+        </div>
+      </div>
 
-                // Build Player UI Preview
-                if (cat.enabled) {
-                    const field = document.createElement('div');
-                    field.innerHTML = `
-                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">${cat.label} (${cat.pts}pts)</label>
-                        <input type="text" placeholder="Your guess..." class="w-full p-4 rounded-xl border-2 border-white shadow-sm focus:border-red-700 transition-all outline-none">
-                        ${cat.bonus ? `
-                            <input type="text" placeholder="${cat.bonusLabel} (+${cat.bonusPts})" class="w-full mt-2 p-3 rounded-xl border-2 border-dashed border-red-200 bg-red-50/50 text-sm italic">
-                        ` : ''}
-                    `;
-                    formContainer.appendChild(field);
-                }
-            });
+    </div>
 
-            document.getElementById('total-points-badge').innerText = `${totalPossible} MAX PTS`;
-            lucide.createIcons();
+    <!-- TAB: PLAYER PREVIEW -->
+    <div id="tab-preview" class="tab-pane space-y-4">
+      <div class="flex items-center justify-between px-1">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Player Tasting Card</p>
+        <span style="font-size:9px; color:var(--wine); font-weight:700; font-style:italic;">LIVE PREVIEW</span>
+      </div>
+      <div id="player-card" class="space-y-3"></div>
+    </div>
+
+    <!-- TAB: EXPORT -->
+    <div id="tab-export" class="tab-pane space-y-4">
+      <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
+        <div class="flex items-center gap-2 mb-1">
+          <div style="padding:7px; background:var(--wine-pale); border-radius:10px; color:var(--wine); display:flex;">
+            <i data-lucide="save" style="width:15px;height:15px"></i>
+          </div>
+          <span class="font-bold text-sm">Save Session</span>
+        </div>
+
+        <!-- Save to localStorage -->
+        <div class="p-4 rounded-xl border border-gray-100 bg-gray-50 space-y-2">
+          <p class="text-xs font-bold text-gray-600">💾 Save Locally</p>
+          <p class="text-xs text-gray-400">Saves to this device's browser storage. Persists between sessions.</p>
+          <button onclick="saveLocal()" class="w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95" style="background:var(--ink); color:white;">
+            Save to Device
+          </button>
+          <button onclick="loadLocal()" class="w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95 border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-400">
+            Load Saved Config
+          </button>
+        </div>
+
+        <!-- Copy JSON -->
+        <div class="p-4 rounded-xl border border-gray-100 bg-gray-50 space-y-2">
+          <p class="text-xs font-bold text-gray-600">📋 Copy Config JSON</p>
+          <p class="text-xs text-gray-400">Copy the raw JSON to paste into your GitHub backend or share with a developer.</p>
+          <button onclick="copyJSON()" class="w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95" style="background:var(--wine); color:white;">
+            Copy JSON to Clipboard
+          </button>
+          <div id="session-code-box"></div>
+        </div>
+
+        <!-- Share URL -->
+        <div class="p-4 rounded-xl border border-gray-100 bg-gray-50 space-y-2">
+          <p class="text-xs font-bold text-gray-600">🔗 Share as URL</p>
+          <p class="text-xs text-gray-400">Encodes config into the URL — shareable with other hosts.</p>
+          <button onclick="shareURL()" class="w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95 border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-400">
+            Generate Share Link
+          </button>
+          <div id="share-url-box" class="hidden text-xs break-all p-3 bg-white border border-gray-200 rounded-xl text-gray-500"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom CTA -->
+  <div class="fixed bottom-0 left-0 right-0 px-4 py-4 glass border-t border-gray-200">
+    <div class="max-w-md mx-auto flex gap-3">
+      <button onclick="switchTab('preview')" class="flex-1 py-4 rounded-2xl font-bold text-sm border-2 border-gray-300 bg-white text-gray-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="eye" style="width:15px;height:15px"></i> Preview
+      </button>
+      <button onclick="lockSession()" class="flex-[2] py-4 rounded-2xl font-black text-base active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg" style="background:var(--wine); color:white; box-shadow:0 6px 20px rgba(123,29,29,0.35);">
+        <i data-lucide="lock" style="width:16px;height:16px"></i> Lock & Start Session
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    // ─── DATA ────────────────────────────────────────────────────────────────
+    const GRAPES = ["Cabernet Sauvignon","Pinot Noir","Syrah / Shiraz","Chardonnay","Sauvignon Blanc","Riesling","Merlot","Nebbiolo","Sangiovese","Grenache","Chenin Blanc","Gamay","Tempranillo","Zinfandel","Malbec","Viognier","Grüner Veltliner","Pinot Gris / Grigio","Gewurztraminer","Mourvèdre","Carmenère","Petit Verdot","Barbera","Dolcetto","Vermentino","Albariño"];
+    const COUNTRIES = ["France","Italy","Spain","USA","Australia","Germany","New Zealand","South Africa","Argentina","Chile","Portugal","Austria","Hungary","Greece","Georgia","Croatia","Slovenia","Israel"];
+    const REGIONS = ["Bordeaux","Burgundy","Champagne","Rhône Valley","Loire Valley","Alsace","Piedmont","Tuscany","Veneto","Sicily","Napa Valley","Sonoma","Rioja","Ribera del Duero","Priorat","Barossa Valley","Clare Valley","Marlborough","Mosel","Rheingau","Pfalz","Stellenbosch","Mendoza","Maipo Valley","Douro","Alentejo","Wachau"];
+
+    const PRESETS = {
+      casual:  { ids: ['grape','country'],                       pts: { grape:20, country:15 }, tolerances: {} },
+      classic: { ids: ['grape','country','region','vintage','producer'], pts: { grape:20, country:10, region:20, vintage:15, producer:20 }, tolerances: { vintage:1 } },
+      vintage: { ids: ['grape','country','region','vintage'],    pts: { grape:15, country:10, region:15, vintage:30 }, tolerances: { vintage:0 } },
+      pro:     { ids: ['grape','country','region','vintage','producer'], pts: { grape:25, country:10, region:25, vintage:20, producer:30 }, tolerances: { vintage:0 } },
+    };
+
+    // ─── STATE ───────────────────────────────────────────────────────────────
+    let appConfig = [
+      { id:'grape',    label:'Grape Variety',  labelZH:'提子品種', pts:20, enabled:true,  list:GRAPES },
+      { id:'country',  label:'Country',        labelZH:'國家',     pts:10, enabled:true,  list:COUNTRIES },
+      { id:'region',   label:'Region',         labelZH:'產區',     pts:20, enabled:true,  list:REGIONS,
+        bonus:true, bonusPts:10, bonusLabel:'Village / Cru Bonus' },
+      { id:'vintage',  label:'Vintage',        labelZH:'年份',     pts:15, enabled:true,  tolerance:1 },
+      { id:'producer', label:'Producer',       labelZH:'酒莊',     pts:20, enabled:true  },
+    ];
+    let activePreset = 'classic';
+    let currentTab = 'setup';
+
+    // ─── VALIDATION ──────────────────────────────────────────────────────────
+    function validatePts(val) {
+      const n = parseInt(val);
+      if (isNaN(n)) return null;
+      return Math.max(0, Math.min(99, n));
+    }
+
+    function getErrors() {
+      const enabled = appConfig.filter(i => i.enabled);
+      if (enabled.length === 0) return 'Enable at least one scoring category.';
+      const total = calcTotal();
+      if (total > 200) return `Total is ${total} pts — consider keeping it under 200 for readability.`;
+      return null;
+    }
+
+    function calcTotal() {
+      return appConfig.reduce((sum, item) => {
+        if (!item.enabled) return sum;
+        return sum + item.pts + (item.bonus ? (item.bonusPts || 0) : 0);
+      }, 0);
+    }
+
+    // ─── RENDER ──────────────────────────────────────────────────────────────
+    function render() {
+      renderConfig();
+      renderPlayerCard();
+      renderTotals();
+      lucide.createIcons();
+    }
+
+    function renderTotals() {
+      const total = calcTotal();
+      document.getElementById('total-pts-badge').textContent = `${total} MAX PTS`;
+      document.getElementById('total-pts-inline').textContent = `${total} pts`;
+
+      const err = getErrors();
+      const banner = document.getElementById('error-banner');
+      if (err) {
+        document.getElementById('error-msg').textContent = err;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function renderConfig() {
+      const ui = document.getElementById('config-ui');
+      ui.innerHTML = '';
+
+      appConfig.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = `config-row p-4 ${!item.enabled ? 'disabled' : ''}`;
+
+        const hasTolerance = item.tolerance !== undefined;
+        const hasBonus = item.bonus !== undefined;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="drag-handle" title="Reorder"><i data-lucide="grip-vertical" style="width:16px;height:16px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm" style="color:var(--ink)">${item.label} <span style="color:var(--muted);font-weight:500">${item.labelZH}</span></p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <input
+                  type="number"
+                  value="${item.pts}"
+                  min="0" max="99"
+                  class="pts-input"
+                  id="pts-${idx}"
+                  onchange="updatePts(${idx}, this.value)"
+                  onclick="this.select()"
+                >
+                <span style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:8px;font-weight:700;color:var(--muted);pointer-events:none">PT</span>
+              </div>
+              <label class="toggle-wrap">
+                <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="updateEnabled(${idx}, this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          ${hasTolerance ? `
+            <div class="tolerance-row">
+              <i data-lucide="calendar-range" style="width:11px;height:11px;flex-shrink:0"></i>
+              <span>Vintage tolerance ±</span>
+              <button class="tol-btn" onclick="adjustTolerance(${idx}, -1)">−</button>
+              <span class="tol-val" id="tol-val-${idx}">${item.tolerance}</span>
+              <button class="tol-btn" onclick="adjustTolerance(${idx}, +1)">+</button>
+              <span style="color:#9CA3AF">year(s) accepted</span>
+            </div>
+          ` : ''}
+
+          ${hasBonus ? `
+            <div class="mt-3 pt-3" style="border-top:1px solid #F3F4F6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <label class="toggle-wrap" style="width:32px;height:18px">
+                    <input type="checkbox" id="bn-${idx}" ${item.bonus ? 'checked' : ''} onchange="updateBonus(${idx}, this.checked)">
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <label for="bn-${idx}" style="font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer">Sub-Region Bonus</label>
+                </div>
+                <div class="relative">
+                  <input type="number" value="${item.bonusPts}" min="0" max="99" class="pts-input" style="width:44px;font-size:11px" onchange="updateBonusPts(${idx}, this.value)" onclick="this.select()">
+                  <span style="position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:7px;font-weight:700;color:var(--muted);pointer-events:none">PT</span>
+                </div>
+              </div>
+              ${item.bonus ? `<p style="font-size:10px;color:#9CA3AF;margin-top:6px;font-style:italic">e.g. Pommard, Chambolle-Musigny, Oakville…</p>` : ''}
+            </div>
+          ` : ''}
+        `;
+        ui.appendChild(row);
+      });
+    }
+
+    function renderPlayerCard() {
+      const card = document.getElementById('player-card');
+      const enabledItems = appConfig.filter(i => i.enabled);
+      card.innerHTML = '';
+
+      if (enabledItems.length === 0) {
+        card.innerHTML = `<div class="empty-state"><i data-lucide="wine-off" style="width:32px;height:32px;margin:0 auto 10px;display:block;opacity:0.3"></i><p>Enable at least one category in Setup.</p></div>`;
+        return;
+      }
+
+      enabledItems.forEach(item => {
+        const wrap = document.createElement('div');
+        wrap.className = 'player-card';
+
+        let inputHTML = '';
+        if (item.list) {
+          inputHTML = `<select class="field-input">
+            <option value="">Select ${item.label}…</option>
+            ${item.list.map(o => `<option>${o}</option>`).join('')}
+          </select>`;
+        } else if (item.id === 'vintage') {
+          const year = new Date().getFullYear();
+          inputHTML = `<input type="number" min="1900" max="${year}" placeholder="e.g. 2018" class="field-input">`;
+          if (item.tolerance > 0) {
+            inputHTML += `<p style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic">±${item.tolerance} year(s) accepted for partial points</p>`;
+          }
+        } else {
+          inputHTML = `<input type="text" placeholder="Enter ${item.label}…" class="field-input">`;
         }
 
-        // LOGIC FUNCTIONS
-        function updatePts(index, val) {
-            config.categories[index].pts = parseInt(val) || 0;
-            renderApp();
-        }
+        const bonusPts = item.bonus ? item.bonusPts : 0;
+        const displayPts = item.pts + bonusPts;
 
-        function toggleCat(index) {
-            config.categories[index].enabled = !config.categories[index].enabled;
-            renderApp();
-        }
+        wrap.innerHTML = `
+          <div class="player-card-header">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.75)">${item.label} ${item.labelZH}</span>
+            <span style="font-size:10px;font-weight:800;color:white;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:99px">${displayPts} PTS</span>
+          </div>
+          <div style="padding:14px 16px;space-y:10px;" class="space-y-3">
+            ${inputHTML}
+            ${item.bonus ? `<input class="bonus-input" type="text" placeholder="🏅 Bonus: Village / Single Vineyard / Cru…">` : ''}
+          </div>
+        `;
+        card.appendChild(wrap);
+      });
+    }
 
-        function toggleBonus(index) {
-            config.categories[index].bonus = !config.categories[index].bonus;
-            renderApp();
-        }
+    // ─── UPDATERS ─────────────────────────────────────────────────────────────
+    function updatePts(idx, val) {
+      const n = validatePts(val);
+      const input = document.getElementById(`pts-${idx}`);
+      if (n === null) {
+        input.classList.add('invalid');
+        showToast('⚠️ Points must be 0–99');
+        return;
+      }
+      input.classList.remove('invalid');
+      appConfig[idx].pts = n;
+      input.value = n;
+      activePreset = null;
+      updatePresetUI();
+      renderTotals();
+    }
 
-        // Initialize
-        renderApp();
-    </script>
+    function updateEnabled(idx, val) {
+      appConfig[idx].enabled = val;
+      activePreset = null;
+      updatePresetUI();
+      render();
+    }
+
+    function updateBonus(idx, val) {
+      appConfig[idx].bonus = val;
+      render();
+    }
+
+    function updateBonusPts(idx, val) {
+      const n = validatePts(val);
+      if (n !== null) {
+        appConfig[idx].bonusPts = n;
+        renderTotals();
+      }
+    }
+
+    function adjustTolerance(idx, delta) {
+      const cur = appConfig[idx].tolerance || 0;
+      appConfig[idx].tolerance = Math.max(0, Math.min(5, cur + delta));
+      document.getElementById(`tol-val-${idx}`).textContent = appConfig[idx].tolerance;
+      renderPlayerCard();
+    }
+
+    // ─── PRESETS ─────────────────────────────────────────────────────────────
+    function applyPreset(name) {
+      const preset = PRESETS[name];
+      if (!preset) return;
+      appConfig.forEach(item => {
+        item.enabled = preset.ids.includes(item.id);
+        if (preset.pts[item.id] !== undefined) item.pts = preset.pts[item.id];
+        if (item.tolerance !== undefined) {
+          item.tolerance = preset.tolerances[item.id] !== undefined ? preset.tolerances[item.id] : 1;
+        }
+      });
+      activePreset = name;
+      updatePresetUI();
+      render();
+      showToast(`✓ Applied "${name}" preset`);
+    }
+
+    function updatePresetUI() {
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('selected'));
+      if (activePreset) {
+        const map = { casual:0, classic:1, vintage:2, pro:3 };
+        const btns = document.querySelectorAll('.preset-btn');
+        if (btns[map[activePreset]]) btns[map[activePreset]].classList.add('selected');
+      }
+    }
+
+    // ─── TABS ─────────────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.classList.add('text-gray-500');
+      });
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabMap = { setup:0, preview:1, export:2 };
+      tabBtns[tabMap[tab]].classList.add('active');
+      tabBtns[tabMap[tab]].classList.remove('text-gray-500');
+      lucide.createIcons();
+    }
+
+    // ─── SAVE / EXPORT ────────────────────────────────────────────────────────
+    function getConfigJSON() {
+      return JSON.stringify(appConfig.map(item => ({
+        id: item.id,
+        label: item.label,
+        labelZH: item.labelZH,
+        pts: item.pts,
+        enabled: item.enabled,
+        ...(item.bonus !== undefined && { bonus: item.bonus, bonusPts: item.bonusPts }),
+        ...(item.tolerance !== undefined && { tolerance: item.tolerance }),
+      })), null, 2);
+    }
+
+    function saveLocal() {
+      try {
+        localStorage.setItem('blindtasting_config', getConfigJSON());
+        showToast('✓ Saved to device');
+      } catch (e) {
+        showToast('❌ Save failed');
+      }
+    }
+
+    function loadLocal() {
+      try {
+        const saved = localStorage.getItem('blindtasting_config');
+        if (!saved) { showToast('No saved config found'); return; }
+        const parsed = JSON.parse(saved);
+        // Merge saved pts/enabled into appConfig (keep list/structure)
+        parsed.forEach(savedItem => {
+          const existing = appConfig.find(a => a.id === savedItem.id);
+          if (existing) {
+            existing.pts = savedItem.pts;
+            existing.enabled = savedItem.enabled;
+            if (savedItem.bonus !== undefined) existing.bonus = savedItem.bonus;
+            if (savedItem.bonusPts !== undefined) existing.bonusPts = savedItem.bonusPts;
+            if (savedItem.tolerance !== undefined) existing.tolerance = savedItem.tolerance;
+          }
+        });
+        activePreset = null;
+        updatePresetUI();
+        render();
+        showToast('✓ Config loaded');
+      } catch (e) {
+        showToast('❌ Load failed — data may be corrupted');
+      }
+    }
+
+    function copyJSON() {
+      const json = getConfigJSON();
+      const box = document.getElementById('session-code-box');
+      box.style.display = 'block';
+      box.textContent = json;
+      navigator.clipboard.writeText(json)
+        .then(() => showToast('✓ JSON copied to clipboard'))
+        .catch(() => showToast('Copy failed — see box below'));
+    }
+
+    function shareURL() {
+      const compressed = btoa(JSON.stringify(appConfig.map(i => ({
+        id:i.id, pts:i.pts, enabled:i.enabled,
+        ...(i.bonus!==undefined&&{bonus:i.bonus,bonusPts:i.bonusPts}),
+        ...(i.tolerance!==undefined&&{tolerance:i.tolerance})
+      }))));
+      const url = `${location.origin}${location.pathname}?config=${compressed}`;
+      const box = document.getElementById('share-url-box');
+      box.classList.remove('hidden');
+      box.textContent = url;
+      navigator.clipboard.writeText(url)
+        .then(() => showToast('✓ Share link copied'))
+        .catch(() => {});
+    }
+
+    function lockSession() {
+      const err = getErrors();
+      if (err && err.includes('Enable at least')) {
+        showToast('⚠️ ' + err);
+        return;
+      }
+      saveLocal();
+      showToast('🔒 Session locked — share the Player card!');
+      setTimeout(() => switchTab('preview'), 600);
+    }
+
+    // ─── TOAST ────────────────────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    // ─── LOAD FROM URL ────────────────────────────────────────────────────────
+    function loadFromURL() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const raw = params.get('config');
+        if (!raw) return;
+        const parsed = JSON.parse(atob(raw));
+        parsed.forEach(savedItem => {
+          const existing = appConfig.find(a => a.id === savedItem.id);
+          if (existing) {
+            existing.pts = savedItem.pts;
+            existing.enabled = savedItem.enabled;
+            if (savedItem.bonus !== undefined) existing.bonus = savedItem.bonus;
+            if (savedItem.bonusPts !== undefined) existing.bonusPts = savedItem.bonusPts;
+            if (savedItem.tolerance !== undefined) existing.tolerance = savedItem.tolerance;
+          }
+        });
+        showToast('✓ Config loaded from shared link');
+      } catch (e) { /* invalid URL param, ignore */ }
+    }
+
+    // ─── INIT ─────────────────────────────────────────────────────────────────
+    loadFromURL();
+    render();
+  </script>
 </body>
 </html>
